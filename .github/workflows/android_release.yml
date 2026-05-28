@@ -44,7 +44,7 @@ jobs:
         run: |
           cd whisper_native
           if [ ! -f "gradlew" ]; then
-            gradle wrapper
+            gradle wrapper --gradle-version 8.5
           fi
           chmod +x gradlew
 
