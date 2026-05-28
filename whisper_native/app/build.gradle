@@ -35,8 +35,11 @@ android {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             
-            if (System.getenv("KEYSTORE_PASSWORD") != null) {
+            def keystoreFile = file(System.getenv("KEYSTORE_PATH") ?: "sudoloser.jks")
+            if (System.getenv("KEYSTORE_PASSWORD") != null && keystoreFile.exists()) {
                 signingConfig signingConfigs.release
+            } else {
+                signingConfig signingConfigs.debug
             }
         }
     }
