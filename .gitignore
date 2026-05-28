@@ -83,3 +83,8 @@ whisper_java/*.swo
 whisper_native/*.swo
 whisper_java/*.swn
 whisper_native/*.swn
+
+# Keystores and Secrets
+*.jks
+*.properties
+!gradle-wrapper.properties

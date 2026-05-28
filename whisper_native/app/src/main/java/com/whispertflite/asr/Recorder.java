@@ -38,7 +38,7 @@ public class Recorder {
     public static final String ACTION_RECORD = "Record";
     public static final String MSG_RECORDING = "Recording...";
     public static final String MSG_RECORDING_DONE = "Recording done...!";
-    public static final int RECORDING_DURATION = 60; //60 seconds
+    public static final int RECORDING_DURATION = 3600; // 1 hour
 
     private final Context mContext;
     private final AtomicBoolean mInProgress = new AtomicBoolean(false);
@@ -157,11 +157,10 @@ public class Recorder {
         AudioRecord audioRecord = new AudioRecord(audioSource, sampleRateInHz, channelConfig, audioFormat, bufferSize);
         audioRecord.startRecording();
 
-        // Calculate maximum byte counts for 30 seconds (for saving)
+        // Calculate maximum byte counts
         int bytesForOneSecond = sampleRateInHz * bytesPerSample * channels;
         int bytesForThreeSeconds = bytesForOneSecond * 3;
-        int bytesForThirtySeconds = bytesForOneSecond * 30;
-        int bytesForSixtySeconds = bytesForOneSecond * RECORDING_DURATION;
+        int bytesForMaxDuration = bytesForOneSecond * RECORDING_DURATION;
 
         ByteArrayOutputStream outputBuffer = new ByteArrayOutputStream(); // Buffer for saving data in wave file
         ByteArrayOutputStream realtimeBuffer = new ByteArrayOutputStream(); // Buffer for real-time processing
@@ -169,11 +168,11 @@ public class Recorder {
         byte[] audioData = new byte[bufferSize];
         int totalBytesRead = 0;
 
-        while (mInProgress.get() && totalBytesRead < bytesForSixtySeconds) {
+        while (mInProgress.get() && totalBytesRead < bytesForMaxDuration) {
             int bytesRead = audioRecord.read(audioData, 0, bufferSize);
             if (bytesRead > 0) {
-                outputBuffer.write(audioData, 0, bytesRead);  // Save all bytes read up to 30 seconds
-                realtimeBuffer.write(audioData, 0, bytesRead); // Accumulate real-time audio data
+                outputBuffer.write(audioData, 0, bytesRead);
+                realtimeBuffer.write(audioData, 0, bytesRead);
                 totalBytesRead += bytesRead;
 
                 // Check if realtimeBuffer has more than 3 seconds of data
@@ -191,7 +190,7 @@ public class Recorder {
         audioRecord.stop();
         audioRecord.release();
 
-        // Save recorded audio data to file (up to 30 seconds)
+        // Save recorded audio data to file
         WaveUtil.createWaveFile(mWavFilePath, outputBuffer.toByteArray(), sampleRateInHz, channels, bytesPerSample);
         sendUpdate(MSG_RECORDING_DONE);
 
@@ -199,8 +198,6 @@ public class Recorder {
         synchronized (fileSavedLock) {
             fileSavedLock.notify(); // Notify that recording is finished
         }
-
-//        moveFileToSdcard(mWavFilePath);
     }
 
     private float[] convertToFloatArray(ByteBuffer buffer) {
@@ -212,9 +209,6 @@ public class Recorder {
         return samples;
     }
 
-    // Move file from /data/user/0/com.whispertflite/files/MicInput.wav to
-    // sdcard path /storage/emulated/0/Android/data/com.whispertflite/files/MicInput.wav
-    // Copy and delete the original file
     private void moveFileToSdcard(String waveFilePath) {
         File sourceFile = new File(waveFilePath);
         File destinationFile = new File(this.mContext.getExternalFilesDir(null), sourceFile.getName());
